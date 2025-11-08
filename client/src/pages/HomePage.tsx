@@ -106,7 +106,7 @@ export default function HomePage() {
                 <div className="p-2 bg-primary rounded-md">
                   <span className="material-icons text-primary-foreground">eco</span>
                 </div>
-                <span className="font-bold text-xl">FoodRescue AI</span>
+                <span className="font-bold text-xl">FoodLoop AI</span>
               </div>
               
               <nav className="hidden md:flex items-center gap-6">
@@ -243,7 +243,7 @@ export default function HomePage() {
                 <div className="p-2 bg-primary rounded-md">
                   <span className="material-icons text-primary-foreground">eco</span>
                 </div>
-                <span className="font-bold text-xl">FoodRescue AI</span>
+                <span className="font-bold text-xl">FoodLoop AI</span>
               </div>
               <p className="text-muted-foreground mb-4">
                 Reducing food waste through AI-powered redistribution. 
@@ -283,7 +283,7 @@ export default function HomePage() {
           </div>
           
           <div className="border-t mt-8 pt-8 text-center text-sm text-muted-foreground">
-            <p>© 2025 FoodRescue AI. Powered by Computer Vision, NLP & IoT.</p>
+            <p>© 2025 FoodLoop AI. Powered by Computer Vision, NLP & IoT.</p>
           </div>
         </div>
       </footer>
