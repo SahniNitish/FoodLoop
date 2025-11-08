@@ -6,6 +6,55 @@ import { insertFoodListingSchema, insertSensorDataSchema } from "@shared/schema"
 import multer from "multer";
 import path from "path";
 import { promises as fs } from "fs";
+import OpenAI from "openai";
+import { z } from "zod";
+
+// Lazy initialization of OpenAI client
+let openai: OpenAI | null = null;
+
+function getOpenAIClient(): OpenAI {
+  if (!process.env.OPENAI_API_KEY) {
+    throw new Error("OPENAI_API_KEY is not configured");
+  }
+  if (!openai) {
+    openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+    });
+  }
+  return openai;
+}
+
+// Chat message validation schema
+const chatMessageSchema = z.object({
+  role: z.enum(["user", "assistant", "system"]),
+  content: z.string().min(1).max(2000),
+});
+
+const chatRequestSchema = z.object({
+  messages: z.array(chatMessageSchema).min(1).max(20),
+});
+
+// Simple in-memory rate limiter
+const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
+const RATE_LIMIT_WINDOW = 60000; // 1 minute
+const MAX_REQUESTS_PER_WINDOW = 10;
+
+function checkRateLimit(ip: string): boolean {
+  const now = Date.now();
+  const record = rateLimitMap.get(ip);
+
+  if (!record || now > record.resetTime) {
+    rateLimitMap.set(ip, { count: 1, resetTime: now + RATE_LIMIT_WINDOW });
+    return true;
+  }
+
+  if (record.count >= MAX_REQUESTS_PER_WINDOW) {
+    return false;
+  }
+
+  record.count++;
+  return true;
+}
 
 const upload = multer({
   storage: multer.diskStorage({
@@ -148,6 +197,83 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: any) {
       console.error("Error creating sensor data:", error);
       res.status(400).json({ error: error.message || "Failed to create sensor data" });
+    }
+  });
+
+  // AI Chat Assistant Route
+  app.post("/api/chat", async (req, res) => {
+    try {
+      // Check rate limit
+      const clientIp = req.ip || req.socket.remoteAddress || "unknown";
+      if (!checkRateLimit(clientIp)) {
+        return res.status(429).json({ 
+          error: "Too many requests. Please try again in a minute." 
+        });
+      }
+
+      // Validate request body
+      const validationResult = chatRequestSchema.safeParse(req.body);
+      if (!validationResult.success) {
+        return res.status(400).json({ 
+          error: "Invalid request format",
+          details: validationResult.error.issues 
+        });
+      }
+
+      const { messages } = validationResult.data;
+
+      // Check if OpenAI is configured
+      let client: OpenAI;
+      try {
+        client = getOpenAIClient();
+      } catch (error: any) {
+        console.error("OpenAI not configured:", error.message);
+        return res.status(503).json({ 
+          error: "AI chat service is not available. Please contact support." 
+        });
+      }
+
+      const systemPrompt = `You are an AI assistant for FoodLoop AI, a platform that reduces food waste by connecting food donors with recipients. 
+
+Your role is to help users:
+- Post surplus food listings with proper details
+- Understand food quality and freshness scores
+- Learn about optimal pickup times and food safety
+- Navigate the platform features
+- Answer questions about food waste reduction
+
+Key features of FoodLoop AI:
+- AI-powered quality inspection using computer vision
+- Real-time IoT sensor monitoring (temperature, humidity)
+- Smart matching between donors and recipients
+- Impact tracking (meals provided, CO2 prevented, pounds saved)
+
+Be helpful, concise, and encouraging. Focus on food waste reduction and community impact.`;
+
+      const completion = await client.chat.completions.create({
+        model: "gpt-4",
+        messages: [
+          { role: "system", content: systemPrompt },
+          ...messages
+        ],
+        temperature: 0.7,
+        max_tokens: 500,
+      });
+
+      const assistantMessage = completion.choices[0].message;
+      res.json({ message: assistantMessage });
+    } catch (error: any) {
+      console.error("Error in chat:", error);
+      
+      // Handle OpenAI-specific errors
+      if (error.status === 401) {
+        return res.status(503).json({ error: "AI service authentication failed" });
+      }
+      if (error.status === 429) {
+        return res.status(503).json({ error: "AI service is busy. Please try again." });
+      }
+      
+      res.status(500).json({ error: "Failed to process chat message" });
     }
   });
 

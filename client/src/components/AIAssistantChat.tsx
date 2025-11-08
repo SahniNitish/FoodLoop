@@ -4,7 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
-import { Send, Bot, User } from "lucide-react";
+import { Send, Bot, User, Loader2 } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 interface Message {
   id: string;
@@ -17,6 +18,7 @@ interface AIAssistantChatProps {
 }
 
 export default function AIAssistantChat({ onClose }: AIAssistantChatProps) {
+  const { toast } = useToast();
   const [messages, setMessages] = useState<Message[]>([
     {
       id: "1",
@@ -25,6 +27,7 @@ export default function AIAssistantChat({ onClose }: AIAssistantChatProps) {
     },
   ]);
   const [input, setInput] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
   const quickActions = [
     "How to post food?",
@@ -33,8 +36,8 @@ export default function AIAssistantChat({ onClose }: AIAssistantChatProps) {
     "Optimal pickup times",
   ];
 
-  const handleSend = () => {
-    if (!input.trim()) return;
+  const handleSend = async () => {
+    if (!input.trim() || isLoading) return;
 
     const userMessage: Message = {
       id: Date.now().toString(),
@@ -42,17 +45,53 @@ export default function AIAssistantChat({ onClose }: AIAssistantChatProps) {
       content: input,
     };
 
-    setMessages([...messages, userMessage]);
+    const updatedMessages = [...messages, userMessage];
+    setMessages(updatedMessages);
     setInput("");
+    setIsLoading(true);
 
-    setTimeout(() => {
+    try {
+      const apiMessages = updatedMessages.map(msg => ({
+        role: msg.role,
+        content: msg.content
+      }));
+
+      const response = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ messages: apiMessages }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to get response from AI");
+      }
+
+      const data = await response.json();
+      
       const assistantMessage: Message = {
-        id: (Date.now() + 1).toString(),
+        id: Date.now().toString(),
         role: "assistant",
-        content: "I understand you're asking about " + input + ". Let me help you with that...",
+        content: data.message.content,
       };
+
       setMessages((prev) => [...prev, assistantMessage]);
-    }, 500);
+    } catch (error: any) {
+      console.error("Chat error:", error);
+      toast({
+        title: "Error",
+        description: "Failed to get AI response. Please try again.",
+        variant: "destructive",
+      });
+      
+      const errorMessage: Message = {
+        id: Date.now().toString(),
+        role: "assistant",
+        content: "I'm sorry, I'm having trouble connecting right now. Please try again in a moment.",
+      };
+      setMessages((prev) => [...prev, errorMessage]);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleQuickAction = (action: string) => {
@@ -134,11 +173,21 @@ export default function AIAssistantChat({ onClose }: AIAssistantChatProps) {
               placeholder="Ask me anything..."
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              onKeyPress={(e) => e.key === "Enter" && handleSend()}
+              onKeyPress={(e) => e.key === "Enter" && !isLoading && handleSend()}
+              disabled={isLoading}
               data-testid="input-chat-message"
             />
-            <Button size="icon" onClick={handleSend} data-testid="button-send-message">
-              <Send className="h-4 w-4" />
+            <Button 
+              size="icon" 
+              onClick={handleSend} 
+              disabled={isLoading || !input.trim()}
+              data-testid="button-send-message"
+            >
+              {isLoading ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Send className="h-4 w-4" />
+              )}
             </Button>
           </div>
         </div>
