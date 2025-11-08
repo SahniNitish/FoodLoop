@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { getFoodListings } from "@/lib/api";
 import { Button } from "@/components/ui/button";
@@ -7,13 +7,17 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { ArrowLeft, MapPin, Search, Navigation, Loader2 } from "lucide-react";
 import { Link } from "wouter";
+import { useToast } from "@/hooks/use-toast";
 import type { FoodListing } from "@shared/schema";
 import foodLoopLogo from '@assets/PHOTO-2025-11-08-14-22-08_1762633632382.jpg';
 
 export default function MapPage() {
+  const { toast } = useToast();
   const [selectedListing, setSelectedListing] = useState<FoodListing | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
-  const [userLocation] = useState({ lat: 40.7128, lng: -74.0060 }); // Default to NYC
+  const [userLocation, setUserLocation] = useState({ lat: 40.7128, lng: -74.0060 }); // Default to NYC
+  const [mapRadius, setMapRadius] = useState(150);
+  const mapContainerRef = useRef<HTMLDivElement>(null);
 
   const { data: foodListings, isLoading } = useQuery({
     queryKey: ["/api/food-listings"],
@@ -24,6 +28,57 @@ export default function MapPage() {
     listing.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
     listing.location.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  // Calculate responsive marker radius based on container size
+  useEffect(() => {
+    const updateRadius = () => {
+      if (mapContainerRef.current) {
+        const containerWidth = mapContainerRef.current.offsetWidth;
+        const containerHeight = mapContainerRef.current.offsetHeight;
+        // Use 30% of the smaller dimension, clamped between 80px and 250px
+        const newRadius = Math.max(80, Math.min(250, Math.min(containerWidth, containerHeight) * 0.3));
+        setMapRadius(newRadius);
+      }
+    };
+
+    updateRadius();
+    window.addEventListener('resize', updateRadius);
+    return () => window.removeEventListener('resize', updateRadius);
+  }, []);
+
+  const handleMyLocation = () => {
+    if (navigator.geolocation) {
+      toast({
+        title: "Getting your location...",
+        description: "Please allow location access",
+      });
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setUserLocation({
+            lat: position.coords.latitude,
+            lng: position.coords.longitude,
+          });
+          toast({
+            title: "Location updated!",
+            description: "Map centered on your current location",
+          });
+        },
+        (error) => {
+          toast({
+            title: "Location access denied",
+            description: "Using default location (NYC)",
+            variant: "destructive",
+          });
+        }
+      );
+    } else {
+      toast({
+        title: "Location not supported",
+        description: "Your browser doesn't support geolocation",
+        variant: "destructive",
+      });
+    }
+  };
 
   const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
     const R = 3959; // Earth's radius in miles
@@ -62,7 +117,12 @@ export default function MapPage() {
             </div>
 
             <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" data-testid="button-my-location">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={handleMyLocation}
+                data-testid="button-my-location"
+              >
                 <Navigation className="h-4 w-4 mr-2" />
                 My Location
               </Button>
@@ -89,7 +149,7 @@ export default function MapPage() {
           </div>
 
           {/* Interactive Map Display */}
-          <div className="h-full w-full relative overflow-hidden">
+          <div ref={mapContainerRef} className="h-full w-full relative overflow-hidden">
             {/* Map Background Grid */}
             <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-background to-muted/10">
               <svg className="w-full h-full opacity-30">
@@ -121,9 +181,8 @@ export default function MapPage() {
                   {/* Food Listing Markers */}
                   {filteredListings?.map((listing, index) => {
                     const angle = (index * 360) / (filteredListings.length || 1);
-                    const radius = 200;
-                    const x = Math.cos((angle * Math.PI) / 180) * radius;
-                    const y = Math.sin((angle * Math.PI) / 180) * radius;
+                    const x = Math.cos((angle * Math.PI) / 180) * mapRadius;
+                    const y = Math.sin((angle * Math.PI) / 180) * mapRadius;
 
                     return (
                       <button
