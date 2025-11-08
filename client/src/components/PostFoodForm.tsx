@@ -11,13 +11,18 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Upload, Camera } from "lucide-react";
+import { Upload, Camera, Loader2 } from "lucide-react";
+import { useMutation } from "@tanstack/react-query";
+import { createFoodListing } from "@/lib/api";
+import { useToast } from "@/hooks/use-toast";
 
 interface PostFoodFormProps {
   onSubmit?: (data: any) => void;
+  onSuccess?: () => void;
 }
 
-export default function PostFoodForm({ onSubmit }: PostFoodFormProps) {
+export default function PostFoodForm({ onSubmit, onSuccess }: PostFoodFormProps) {
+  const { toast } = useToast();
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -30,14 +35,45 @@ export default function PostFoodForm({ onSubmit }: PostFoodFormProps) {
   });
 
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+
+  const createMutation = useMutation({
+    mutationFn: createFoodListing,
+    onSuccess: () => {
+      toast({
+        title: "Success!",
+        description: "Your food listing has been posted.",
+      });
+      onSuccess?.();
+      setFormData({
+        title: "",
+        description: "",
+        quantity: "",
+        category: "",
+        location: "",
+        pickupDate: "",
+        pickupTimeStart: "",
+        pickupTimeEnd: "",
+      });
+      setUploadedImage(null);
+      setImageFile(null);
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to post food listing",
+        variant: "destructive",
+      });
+    },
+  });
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      setImageFile(file);
       const reader = new FileReader();
       reader.onloadend = () => {
         setUploadedImage(reader.result as string);
-        console.log("Image uploaded for AI analysis");
       };
       reader.readAsDataURL(file);
     }
@@ -45,8 +81,30 @@ export default function PostFoodForm({ onSubmit }: PostFoodFormProps) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Form submitted:", formData);
-    onSubmit?.(formData);
+    
+    const pickupStart = new Date(`${formData.pickupDate}T${formData.pickupTimeStart}`);
+    const pickupEnd = new Date(`${formData.pickupDate}T${formData.pickupTimeEnd}`);
+
+    const listingData = {
+      title: formData.title,
+      description: formData.description,
+      quantity: formData.quantity,
+      category: formData.category,
+      location: formData.location,
+      latitude: 40.7128,
+      longitude: -74.0060,
+      pickupTimeStart: pickupStart,
+      pickupTimeEnd: pickupEnd,
+      freshnessScore: 85,
+      qualityScore: 85,
+      defectsDetected: [],
+      aiAnalysis: null,
+      donorId: "demo-user",
+      image: imageFile || undefined,
+    };
+
+    createMutation.mutate(listingData as any);
+    onSubmit?.(listingData);
   };
 
   return (
@@ -202,9 +260,24 @@ export default function PostFoodForm({ onSubmit }: PostFoodFormProps) {
             </div>
           </div>
 
-          <Button type="submit" className="w-full" size="lg" data-testid="button-submit-post">
-            <span className="material-icons text-sm mr-2">publish</span>
-            Post Food Listing
+          <Button 
+            type="submit" 
+            className="w-full" 
+            size="lg" 
+            disabled={createMutation.isPending}
+            data-testid="button-submit-post"
+          >
+            {createMutation.isPending ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Posting...
+              </>
+            ) : (
+              <>
+                <span className="material-icons text-sm mr-2">publish</span>
+                Post Food Listing
+              </>
+            )}
           </Button>
         </form>
       </CardContent>

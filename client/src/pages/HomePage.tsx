@@ -1,4 +1,7 @@
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { queryClient } from "@/lib/queryClient";
+import { getFoodListings, updateFoodListing } from "@/lib/api";
 import HeroSection from "@/components/HeroSection";
 import FoodListingCard from "@/components/FoodListingCard";
 import MapView from "@/components/MapView";
@@ -24,56 +27,59 @@ import {
 } from "@/components/ui/sheet";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
-import { Search, Bell, Menu, MessageCircle } from "lucide-react";
-import foodImage from '@assets/generated_images/Fresh_surplus_food_arrangement_fd80cf7a.png';
+import { Search, Bell, Menu, MessageCircle, Loader2 } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 import inspectionImage from '@assets/generated_images/AI_food_quality_inspection_2d05afb7.png';
 
 export default function HomePage() {
+  const { toast } = useToast();
   const [showPostForm, setShowPostForm] = useState(false);
   const [showChat, setShowChat] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
 
-  const mockFoodListings = [
-    {
-      id: "1",
-      title: "Fresh Vegetables & Bread",
-      quantity: "5 lbs mixed produce, 2 loaves",
-      imageUrl: foodImage,
-      location: "Community Kitchen, Downtown",
-      pickupTime: "Today, 4:00 PM - 6:00 PM",
-      freshnessScore: 94,
-      temperature: 38,
-      humidity: 65,
-      defects: [],
-    },
-    {
-      id: "2",
-      title: "Prepared Meals - Pasta & Salad",
-      quantity: "12 servings",
-      imageUrl: foodImage,
-      location: "Italian Restaurant, Midtown",
-      pickupTime: "Today, 8:00 PM - 9:00 PM",
-      freshnessScore: 88,
-      temperature: 40,
-      humidity: 60,
-      defects: [],
-    },
-    {
-      id: "3",
-      title: "Bakery Assortment",
-      quantity: "15+ items",
-      imageUrl: foodImage,
-      location: "Corner Bakery, Eastside",
-      pickupTime: "Tomorrow, 7:00 AM - 9:00 AM",
-      freshnessScore: 92,
-      defects: [],
-    },
-  ];
+  const { data: foodListings, isLoading } = useQuery({
+    queryKey: ["/api/food-listings"],
+    queryFn: getFoodListings,
+  });
 
-  const mockLocations = [
+  const handleClaimFood = async (id: string) => {
+    try {
+      await updateFoodListing(id, { status: "claimed" });
+      toast({
+        title: "Food claimed!",
+        description: "You've successfully claimed this food item.",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/food-listings"] });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to claim food item",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const formatPickupTime = (start: Date, end: Date) => {
+    const options: Intl.DateTimeFormatOptions = { 
+      month: 'short', 
+      day: 'numeric', 
+      hour: 'numeric', 
+      minute: '2-digit' 
+    };
+    return `${new Date(start).toLocaleDateString('en-US', options)} - ${new Date(end).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}`;
+  };
+
+  const mapLocations = [
     { id: "1", name: "Downtown Food Bank", type: "food_bank" as const, latitude: 40.7128, longitude: -74.0060 },
     { id: "2", name: "Community Fridge #1", type: "community_fridge" as const, latitude: 40.7580, longitude: -73.9855 },
-    { id: "3", name: "Fresh Produce Available", type: "food_listing" as const, latitude: 40.7489, longitude: -73.9680, freshnessScore: 94 },
+    ...(foodListings || []).map(listing => ({
+      id: listing.id,
+      name: listing.title,
+      type: "food_listing" as const,
+      latitude: listing.latitude,
+      longitude: listing.longitude,
+      freshnessScore: listing.freshnessScore,
+    })),
   ];
 
   const mockSensorReadings = [
@@ -89,11 +95,11 @@ export default function HomePage() {
     confidence: 96,
   };
 
-  const mockImpactStats = {
-    mealsProvided: 12847,
-    poundsSaved: 45230,
-    co2Prevented: 18650,
-    itemsRescued: 3256,
+  const impactStats = {
+    mealsProvided: (foodListings?.length || 0) * 15,
+    poundsSaved: (foodListings?.length || 0) * 25,
+    co2Prevented: (foodListings?.length || 0) * 10,
+    itemsRescued: foodListings?.length || 0,
   };
 
   return (
@@ -183,26 +189,48 @@ export default function HomePage() {
               </TabsList>
 
               <TabsContent value="list" className="mt-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {mockFoodListings.map((listing) => (
-                    <FoodListingCard
-                      key={listing.id}
-                      {...listing}
-                      onClaim={(id) => console.log('Claimed:', id)}
-                    />
-                  ))}
-                </div>
+                {isLoading ? (
+                  <div className="flex items-center justify-center py-12">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                  </div>
+                ) : foodListings && foodListings.length > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {foodListings.map((listing) => (
+                      <FoodListingCard
+                        key={listing.id}
+                        id={listing.id}
+                        title={listing.title}
+                        quantity={listing.quantity}
+                        imageUrl={listing.imageUrl || undefined}
+                        location={listing.location}
+                        pickupTime={formatPickupTime(listing.pickupTimeStart, listing.pickupTimeEnd)}
+                        freshnessScore={listing.freshnessScore}
+                        defects={listing.defectsDetected || []}
+                        onClaim={handleClaimFood}
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-12">
+                    <span className="material-icons text-6xl text-muted-foreground mb-4">restaurant</span>
+                    <p className="text-xl text-muted-foreground mb-4">No food listings yet</p>
+                    <Button onClick={() => setShowPostForm(true)}>
+                      <span className="material-icons text-sm mr-2">add_circle</span>
+                      Post the first listing
+                    </Button>
+                  </div>
+                )}
               </TabsContent>
 
               <TabsContent value="map" className="mt-6">
-                <MapView locations={mockLocations} />
+                <MapView locations={mapLocations} />
               </TabsContent>
             </Tabs>
           </section>
 
           <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2">
-              <ImpactDashboard stats={mockImpactStats} />
+              <ImpactDashboard stats={impactStats} />
             </div>
             <div className="space-y-6">
               <SensorMonitorPanel
@@ -293,10 +321,12 @@ export default function HomePage() {
           <DialogHeader>
             <DialogTitle className="sr-only">Post Food</DialogTitle>
           </DialogHeader>
-          <PostFoodForm onSubmit={(data) => {
-            console.log('Posted:', data);
-            setShowPostForm(false);
-          }} />
+          <PostFoodForm 
+            onSuccess={() => {
+              setShowPostForm(false);
+              queryClient.invalidateQueries({ queryKey: ["/api/food-listings"] });
+            }}
+          />
         </DialogContent>
       </Dialog>
 
