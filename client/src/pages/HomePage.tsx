@@ -119,7 +119,7 @@ export default function HomePage() {
                 <Link href="/map" className="text-sm font-medium hover:text-primary">Find Food</Link>
                 <button onClick={() => setShowPostForm(true)} className="text-sm font-medium hover:text-primary">Post Food</button>
                 <a href="#" className="text-sm font-medium hover:text-primary">Monitor</a>
-                <a href="#" className="text-sm font-medium hover:text-primary">Impact</a>
+                <Link href="/impact" className="text-sm font-medium hover:text-primary">Impact</Link>
               </nav>
             </div>
 
@@ -290,10 +290,10 @@ export default function HomePage() {
             <div>
               <h3 className="font-semibold mb-4">Platform</h3>
               <ul className="space-y-2 text-sm text-muted-foreground">
-                <li><a href="#" className="hover:text-foreground">Find Food</a></li>
-                <li><a href="#" className="hover:text-foreground">Post Food</a></li>
+                <li><Link href="/map" className="hover:text-foreground">Find Food</Link></li>
+                <li><button onClick={() => setShowPostForm(true)} className="hover:text-foreground">Post Food</button></li>
                 <li><a href="#" className="hover:text-foreground">Monitor</a></li>
-                <li><a href="#" className="hover:text-foreground">Impact Dashboard</a></li>
+                <li><Link href="/impact" className="hover:text-foreground">Impact Dashboard</Link></li>
               </ul>
             </div>
             
@@ -337,7 +337,7 @@ export default function HomePage() {
             <Link href="/map" className="text-lg font-medium hover:text-primary">Find Food</Link>
             <button onClick={() => { setShowPostForm(true); setShowMobileMenu(false); }} className="text-lg font-medium hover:text-primary text-left">Post Food</button>
             <a href="#" className="text-lg font-medium hover:text-primary">Monitor</a>
-            <a href="#" className="text-lg font-medium hover:text-primary">Impact</a>
+            <Link href="/impact" className="text-lg font-medium hover:text-primary">Impact</Link>
           </nav>
         </SheetContent>
       </Sheet>
