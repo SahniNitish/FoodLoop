@@ -251,7 +251,7 @@ Key features of FoodLoop AI:
 Be helpful, concise, and encouraging. Focus on food waste reduction and community impact.`;
 
       const completion = await client.chat.completions.create({
-        model: "gpt-4",
+        model: "gpt-4o-mini",
         messages: [
           { role: "system", content: systemPrompt },
           ...messages
