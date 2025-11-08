@@ -28,6 +28,7 @@ export default function PostFoodForm({ onSubmit, onSuccess }: PostFoodFormProps)
     description: "",
     quantity: "",
     category: "",
+    cost: "",
     location: "",
     pickupDate: "",
     pickupTimeStart: "",
@@ -36,6 +37,7 @@ export default function PostFoodForm({ onSubmit, onSuccess }: PostFoodFormProps)
 
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
 
   const createMutation = useMutation({
     mutationFn: createFoodListing,
@@ -50,6 +52,7 @@ export default function PostFoodForm({ onSubmit, onSuccess }: PostFoodFormProps)
         description: "",
         quantity: "",
         category: "",
+        cost: "",
         location: "",
         pickupDate: "",
         pickupTimeStart: "",
@@ -67,7 +70,7 @@ export default function PostFoodForm({ onSubmit, onSuccess }: PostFoodFormProps)
     },
   });
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       setImageFile(file);
@@ -76,6 +79,52 @@ export default function PostFoodForm({ onSubmit, onSuccess }: PostFoodFormProps)
         setUploadedImage(reader.result as string);
       };
       reader.readAsDataURL(file);
+
+      // AI Food Detection
+      setIsAnalyzing(true);
+      toast({
+        title: "Analyzing food...",
+        description: "AI is detecting what food this is",
+      });
+
+      try {
+        const formData = new FormData();
+        formData.append("image", file);
+
+        const response = await fetch("/api/detect-food", {
+          method: "POST",
+          body: formData,
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to analyze food");
+        }
+
+        const foodData = await response.json();
+        
+        // Auto-fill the form with AI-detected data
+        setFormData(prev => ({
+          ...prev,
+          title: foodData.title || prev.title,
+          description: foodData.description || prev.description,
+          quantity: foodData.quantity || prev.quantity,
+          category: foodData.category || prev.category,
+        }));
+
+        toast({
+          title: "Food detected!",
+          description: `Identified as: ${foodData.title}`,
+        });
+      } catch (error) {
+        console.error("Food detection error:", error);
+        toast({
+          title: "Detection failed",
+          description: "You can still fill in the details manually",
+          variant: "destructive",
+        });
+      } finally {
+        setIsAnalyzing(false);
+      }
     }
   };
 
@@ -90,6 +139,7 @@ export default function PostFoodForm({ onSubmit, onSuccess }: PostFoodFormProps)
       description: formData.description,
       quantity: formData.quantity,
       category: formData.category,
+      cost: formData.cost || undefined,
       location: formData.location,
       latitude: 40.7128,
       longitude: -74.0060,
@@ -118,13 +168,20 @@ export default function PostFoodForm({ onSubmit, onSuccess }: PostFoodFormProps)
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="space-y-2">
-            <Label htmlFor="image">Food Photo (AI Analysis)</Label>
+            <Label htmlFor="image">Food Photo (AI Detection)</Label>
             <div className="flex items-center gap-4">
               <label
                 htmlFor="image-upload"
                 className="flex-1 flex items-center justify-center gap-2 p-8 border-2 border-dashed rounded-md cursor-pointer hover-elevate"
               >
-                {uploadedImage ? (
+                {isAnalyzing ? (
+                  <div className="text-center">
+                    <Loader2 className="h-8 w-8 mx-auto mb-2 text-primary animate-spin" />
+                    <p className="text-sm text-muted-foreground">
+                      AI is analyzing your food...
+                    </p>
+                  </div>
+                ) : uploadedImage ? (
                   <img
                     src={uploadedImage}
                     alt="Uploaded food"
@@ -134,7 +191,10 @@ export default function PostFoodForm({ onSubmit, onSuccess }: PostFoodFormProps)
                   <div className="text-center">
                     <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
                     <p className="text-sm text-muted-foreground">
-                      Upload photo for AI quality check
+                      Upload photo for AI detection
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Auto-fills title, category & description
                     </p>
                   </div>
                 )}
@@ -145,6 +205,7 @@ export default function PostFoodForm({ onSubmit, onSuccess }: PostFoodFormProps)
                   className="hidden"
                   onChange={handleImageUpload}
                   data-testid="input-image-upload"
+                  disabled={isAnalyzing}
                 />
               </label>
               <Button type="button" variant="outline" size="icon">
@@ -200,16 +261,29 @@ export default function PostFoodForm({ onSubmit, onSuccess }: PostFoodFormProps)
             />
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="quantity">Quantity *</Label>
-            <Input
-              id="quantity"
-              placeholder="e.g., 5 lbs, 10 servings"
-              value={formData.quantity}
-              onChange={(e) => setFormData({ ...formData, quantity: e.target.value })}
-              data-testid="input-quantity"
-              required
-            />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="quantity">Quantity *</Label>
+              <Input
+                id="quantity"
+                placeholder="e.g., 5 lbs, 10 servings"
+                value={formData.quantity}
+                onChange={(e) => setFormData({ ...formData, quantity: e.target.value })}
+                data-testid="input-quantity"
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="cost">Cost (Optional)</Label>
+              <Input
+                id="cost"
+                placeholder="e.g., Free, $5, $10"
+                value={formData.cost}
+                onChange={(e) => setFormData({ ...formData, cost: e.target.value })}
+                data-testid="input-cost"
+              />
+            </div>
           </div>
 
           <div className="space-y-2">
@@ -264,13 +338,18 @@ export default function PostFoodForm({ onSubmit, onSuccess }: PostFoodFormProps)
             type="submit" 
             className="w-full" 
             size="lg" 
-            disabled={createMutation.isPending}
+            disabled={createMutation.isPending || isAnalyzing}
             data-testid="button-submit-post"
           >
             {createMutation.isPending ? (
               <>
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                 Posting...
+              </>
+            ) : isAnalyzing ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                AI Analyzing...
               </>
             ) : (
               <>

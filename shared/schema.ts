@@ -16,6 +16,7 @@ export const foodListings = pgTable("food_listings", {
   quantity: text("quantity").notNull(),
   category: text("category").notNull(),
   imageUrl: text("image_url"),
+  cost: text("cost"),
   location: text("location").notNull(),
   latitude: real("latitude").notNull(),
   longitude: real("longitude").notNull(),

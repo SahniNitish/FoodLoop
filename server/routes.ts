@@ -200,6 +200,88 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // AI Food Detection Route
+  app.post("/api/detect-food", upload.single("image"), async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ error: "No image file provided" });
+      }
+
+      // Check if OpenAI is configured
+      let client: OpenAI;
+      try {
+        client = getOpenAIClient();
+      } catch (error: any) {
+        console.error("OpenAI not configured:", error.message);
+        return res.status(503).json({ 
+          error: "AI detection service is not available." 
+        });
+      }
+
+      // Read the uploaded image file and convert to base64
+      const imagePath = req.file.path;
+      const imageBuffer = await fs.readFile(imagePath);
+      const base64Image = imageBuffer.toString('base64');
+      const imageUrl = `data:${req.file.mimetype};base64,${base64Image}`;
+
+      // Use OpenAI Vision API to analyze the food
+      const response = await client.chat.completions.create({
+        model: "gpt-4o-mini",
+        messages: [
+          {
+            role: "user",
+            content: [
+              {
+                type: "text",
+                text: `Analyze this food image and provide detailed information in the following JSON format:
+{
+  "title": "concise food name (e.g., 'Fresh Organic Apples', 'Mixed Salad Greens')",
+  "category": "one of: produce, bakery, dairy, prepared, packaged, other",
+  "description": "detailed description including type, appearance, condition, estimated freshness, and any notable features (50-100 words)",
+  "quantity": "estimated quantity with unit (e.g., '5 lbs', '10 servings', '2 loaves')",
+  "freshnessScore": number between 60-100 based on visual appearance,
+  "defectsDetected": array of any visible defects like ["bruising", "discoloration", "wilting"] or empty array if none
+}
+
+Be specific and practical. Focus on helping donors accurately describe their surplus food.`
+              },
+              {
+                type: "image_url",
+                image_url: {
+                  url: imageUrl
+                }
+              }
+            ]
+          }
+        ],
+        max_tokens: 500,
+        temperature: 0.3,
+      });
+
+      const content = response.choices[0].message.content;
+      if (!content) {
+        return res.status(500).json({ error: "No response from AI" });
+      }
+
+      // Parse the JSON response
+      try {
+        const foodData = JSON.parse(content);
+        res.json(foodData);
+      } catch (parseError) {
+        console.error("Failed to parse AI response:", content);
+        res.status(500).json({ error: "Failed to parse AI response" });
+      }
+    } catch (error: any) {
+      console.error("Error in food detection:", error);
+      
+      if (error.status === 429) {
+        return res.status(503).json({ error: "AI service is busy. Please try again." });
+      }
+      
+      res.status(500).json({ error: "Failed to detect food" });
+    }
+  });
+
   // AI Chat Assistant Route
   app.post("/api/chat", async (req, res) => {
     try {
