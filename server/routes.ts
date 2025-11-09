@@ -210,6 +210,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Sensor Data Routes
   
   // Get sensor data for a listing
+  // Get all organizations
+  app.get("/api/organizations", async (req, res) => {
+    try {
+      const orgs = await storage.getAllOrganizations();
+      res.json(orgs);
+    } catch (error) {
+      console.error("Error fetching organizations:", error);
+      res.status(500).json({ error: "Failed to fetch organizations" });
+    }
+  });
+
+  // Get organization detail with suppliers and ratings
+  app.get("/api/organizations/:id", async (req, res) => {
+    try {
+      const org = await storage.getOrganization(req.params.id);
+      if (!org) {
+        return res.status(404).json({ error: "Organization not found" });
+      }
+
+      // Get all ratings for this organization
+      const ratings = await storage.getRatingsForOrganization(req.params.id);
+      
+      // Get supplier details for each rating
+      const suppliersWithRatings = await Promise.all(
+        ratings.map(async (rating) => {
+          const user = await storage.getUser(rating.supplierId);
+          const listings = await storage.getListingsByDonor(rating.supplierId);
+          return {
+            ...rating,
+            supplierName: user?.username || "Unknown",
+            activeListings: listings.filter(l => l.status === "available").length,
+            totalListings: listings.length,
+          };
+        })
+      );
+
+      res.json({
+        ...org,
+        suppliers: suppliersWithRatings,
+      });
+    } catch (error) {
+      console.error("Error fetching organization details:", error);
+      res.status(500).json({ error: "Failed to fetch organization details" });
+    }
+  });
+
   app.get("/api/sensor-data/:listingId", async (req, res) => {
     try {
       const data = await storage.getSensorDataForListing(req.params.listingId);

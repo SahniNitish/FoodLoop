@@ -91,8 +91,13 @@ export class MemStorage implements IStorage {
     const id = randomUUID();
     const listing: FoodListing = {
       ...insertListing,
+      cost: insertListing.cost ?? null,
       imageUrl: insertListing.imageUrl ?? null,
       defectsDetected: insertListing.defectsDetected ?? null,
+      expiryDate: insertListing.expiryDate ?? null,
+      pickupTimeStart: insertListing.pickupTimeStart ?? null,
+      pickupTimeEnd: insertListing.pickupTimeEnd ?? null,
+      aiAnalysis: insertListing.aiAnalysis ?? null,
       id,
       status: "available",
       createdAt: new Date(),
@@ -161,6 +166,9 @@ export class MemStorage implements IStorage {
     const id = randomUUID();
     const org: Organization = {
       ...insertOrg,
+      imageUrl: insertOrg.imageUrl ?? null,
+      website: insertOrg.website ?? null,
+      verified: insertOrg.verified ?? false,
       id,
       createdAt: new Date(),
     };
@@ -184,6 +192,10 @@ export class MemStorage implements IStorage {
     const id = randomUUID();
     const rating: SupplierRating = {
       ...insertRating,
+      googleReviewScore: insertRating.googleReviewScore ?? null,
+      aiAnalysis: insertRating.aiAnalysis ?? null,
+      foodSafetyCertified: insertRating.foodSafetyCertified ?? false,
+      totalDonations: insertRating.totalDonations ?? 0,
       id,
       createdAt: new Date(),
       updatedAt: new Date(),
