@@ -260,6 +260,56 @@ export default function HomePage() {
               </div>
             </div>
           </section>
+
+          <section>
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h2 className="text-3xl font-bold mb-2">Top Organizations</h2>
+                <p className="text-muted-foreground">
+                  Halifax NGOs and food banks rated by our AI-powered supplier scoring system
+                </p>
+              </div>
+              <Link href="/organizations">
+                <Button variant="outline" data-testid="button-view-all-orgs">
+                  View All Organizations
+                  <span className="material-icons text-sm ml-2">arrow_forward</span>
+                </Button>
+              </Link>
+            </div>
+            <div className="bg-primary/5 border border-primary/20 rounded-lg p-8 text-center">
+              <div className="flex flex-col items-center gap-4">
+                <div className="bg-primary/10 rounded-full p-4">
+                  <span className="material-icons text-5xl text-primary">apartment</span>
+                </div>
+                <h3 className="text-2xl font-bold">Discover Trusted Food Partners</h3>
+                <p className="text-muted-foreground max-w-2xl">
+                  Explore Halifax's leading food banks and NGOs. Our AI analyzes supplier ratings based on 
+                  Google reviews, food safety certifications, reliability metrics, and donation history to 
+                  help you find the most trustworthy organizations.
+                </p>
+                <div className="flex gap-4 mt-4">
+                  <Badge className="bg-primary/10 text-primary text-sm">
+                    <span className="material-icons text-xs mr-1">verified</span>
+                    6 Verified Organizations
+                  </Badge>
+                  <Badge className="bg-primary/10 text-primary text-sm">
+                    <span className="material-icons text-xs mr-1">stars</span>
+                    AI-Powered Ratings
+                  </Badge>
+                  <Badge className="bg-primary/10 text-primary text-sm">
+                    <span className="material-icons text-xs mr-1">security</span>
+                    Food Safety Certified
+                  </Badge>
+                </div>
+                <Link href="/organizations">
+                  <Button size="lg" className="mt-4" data-testid="button-explore-orgs">
+                    <span className="material-icons text-sm mr-2">explore</span>
+                    Explore Organizations
+                  </Button>
+                </Link>
+              </div>
+            </div>
+          </section>
         </div>
       </main>
 
