@@ -1,5 +1,7 @@
-import { type User, type InsertUser, type FoodListing, type InsertFoodListing, type SensorData, type InsertSensorData } from "@shared/schema";
+import { type User, type InsertUser, type FoodListing, type InsertFoodListing, type SensorData, type InsertSensorData, users, foodListings, sensorData } from "@shared/schema";
 import { randomUUID } from "crypto";
+import { db } from "./db";
+import { eq } from "drizzle-orm";
 
 // modify the interface with any CRUD methods
 // you might need
@@ -109,4 +111,63 @@ export class MemStorage implements IStorage {
   }
 }
 
-export const storage = new MemStorage();
+export class DatabaseStorage implements IStorage {
+  async getUser(id: string): Promise<User | undefined> {
+    const result = await db.select().from(users).where(eq(users.id, id)).limit(1);
+    return result[0];
+  }
+
+  async getUserByUsername(username: string): Promise<User | undefined> {
+    const result = await db.select().from(users).where(eq(users.username, username)).limit(1);
+    return result[0];
+  }
+
+  async createUser(insertUser: InsertUser): Promise<User> {
+    const result = await db.insert(users).values(insertUser).returning();
+    return result[0];
+  }
+
+  async getFoodListing(id: string): Promise<FoodListing | undefined> {
+    const result = await db.select().from(foodListings).where(eq(foodListings.id, id)).limit(1);
+    return result[0];
+  }
+
+  async getAllFoodListings(): Promise<FoodListing[]> {
+    return await db.select().from(foodListings);
+  }
+
+  async getAvailableFoodListings(): Promise<FoodListing[]> {
+    return await db.select().from(foodListings).where(eq(foodListings.status, "available"));
+  }
+
+  async createFoodListing(insertListing: InsertFoodListing): Promise<FoodListing> {
+    const result = await db.insert(foodListings).values(insertListing).returning();
+    return result[0];
+  }
+
+  async updateFoodListing(id: string, updates: Partial<FoodListing>): Promise<FoodListing | undefined> {
+    const result = await db.update(foodListings)
+      .set(updates)
+      .where(eq(foodListings.id, id))
+      .returning();
+    return result[0];
+  }
+
+  async deleteFoodListing(id: string): Promise<boolean> {
+    const result = await db.delete(foodListings).where(eq(foodListings.id, id)).returning();
+    return result.length > 0;
+  }
+
+  async getSensorDataForListing(listingId: string): Promise<SensorData[]> {
+    return await db.select().from(sensorData)
+      .where(eq(sensorData.listingId, listingId))
+      .orderBy(sensorData.timestamp);
+  }
+
+  async createSensorData(insertData: InsertSensorData): Promise<SensorData> {
+    const result = await db.insert(sensorData).values(insertData).returning();
+    return result[0];
+  }
+}
+
+export const storage = new DatabaseStorage();
