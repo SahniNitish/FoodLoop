@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, timestamp, real, integer, jsonb } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, timestamp, real, integer, jsonb, boolean } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -61,17 +61,17 @@ export const organizations = pgTable("organizations", {
   contactPhone: text("contact_phone").notNull(),
   website: text("website"),
   imageUrl: text("image_url"),
-  verified: integer("verified").notNull().default(0),
+  verified: boolean("verified").notNull().default(false),
   createdAt: timestamp("created_at").notNull().default(sql`now()`),
 });
 
 export const supplierRatings = pgTable("supplier_ratings", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  supplierId: varchar("supplier_id").notNull(),
-  organizationId: varchar("organization_id").notNull(),
+  supplierId: varchar("supplier_id").notNull().references(() => users.id),
+  organizationId: varchar("organization_id").notNull().references(() => organizations.id),
   overallRating: real("overall_rating").notNull(),
   googleReviewScore: real("google_review_score"),
-  foodSafetyCertified: integer("food_safety_certified").notNull().default(0),
+  foodSafetyCertified: boolean("food_safety_certified").notNull().default(false),
   reliabilityScore: real("reliability_score").notNull(),
   qualityScore: real("quality_score").notNull(),
   totalDonations: integer("total_donations").notNull().default(0),
