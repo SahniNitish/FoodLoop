@@ -30,9 +30,7 @@ export default function PostFoodForm({ onSubmit, onSuccess }: PostFoodFormProps)
     category: "",
     cost: "",
     location: "",
-    pickupDate: "",
-    pickupTimeStart: "",
-    pickupTimeEnd: "",
+    expiryDate: "",
   });
 
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
@@ -54,9 +52,7 @@ export default function PostFoodForm({ onSubmit, onSuccess }: PostFoodFormProps)
         category: "",
         cost: "",
         location: "",
-        pickupDate: "",
-        pickupTimeStart: "",
-        pickupTimeEnd: "",
+        expiryDate: "",
       });
       setUploadedImage(null);
       setImageFile(null);
@@ -131,8 +127,7 @@ export default function PostFoodForm({ onSubmit, onSuccess }: PostFoodFormProps)
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    const pickupStart = new Date(`${formData.pickupDate}T${formData.pickupTimeStart}`);
-    const pickupEnd = new Date(`${formData.pickupDate}T${formData.pickupTimeEnd}`);
+    const expiryDate = new Date(formData.expiryDate);
 
     const listingData = {
       title: formData.title,
@@ -143,8 +138,7 @@ export default function PostFoodForm({ onSubmit, onSuccess }: PostFoodFormProps)
       location: formData.location,
       latitude: 44.6488,
       longitude: -63.5752,
-      pickupTimeStart: pickupStart,
-      pickupTimeEnd: pickupEnd,
+      expiryDate: expiryDate,
       freshnessScore: 85,
       qualityScore: 85,
       defectsDetected: [],
@@ -298,40 +292,20 @@ export default function PostFoodForm({ onSubmit, onSuccess }: PostFoodFormProps)
             />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="pickup-date">Pickup Date *</Label>
-              <Input
-                id="pickup-date"
-                type="date"
-                value={formData.pickupDate}
-                onChange={(e) => setFormData({ ...formData, pickupDate: e.target.value })}
-                data-testid="input-pickup-date"
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="time-start">Start Time *</Label>
-              <Input
-                id="time-start"
-                type="time"
-                value={formData.pickupTimeStart}
-                onChange={(e) => setFormData({ ...formData, pickupTimeStart: e.target.value })}
-                data-testid="input-time-start"
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="time-end">End Time *</Label>
-              <Input
-                id="time-end"
-                type="time"
-                value={formData.pickupTimeEnd}
-                onChange={(e) => setFormData({ ...formData, pickupTimeEnd: e.target.value })}
-                data-testid="input-time-end"
-                required
-              />
-            </div>
+          <div className="space-y-2">
+            <Label htmlFor="expiry-date">Expiry Date *</Label>
+            <Input
+              id="expiry-date"
+              type="date"
+              value={formData.expiryDate}
+              onChange={(e) => setFormData({ ...formData, expiryDate: e.target.value })}
+              data-testid="input-expiry-date"
+              min={new Date().toISOString().split('T')[0]}
+              required
+            />
+            <p className="text-xs text-muted-foreground">
+              When does this food expire or need to be picked up by?
+            </p>
           </div>
 
           <Button 
