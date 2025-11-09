@@ -1,4 +1,4 @@
-import { type User, type InsertUser, type FoodListing, type InsertFoodListing, type SensorData, type InsertSensorData, type Claim, type InsertClaim, users, foodListings, sensorData, claims } from "@shared/schema";
+import { type User, type InsertUser, type FoodListing, type InsertFoodListing, type SensorData, type InsertSensorData, type Claim, type InsertClaim, type Organization, type InsertOrganization, type SupplierRating, type InsertSupplierRating, users, foodListings, sensorData, claims, organizations, supplierRatings } from "@shared/schema";
 import { randomUUID } from "crypto";
 import { db } from "./db";
 import { eq } from "drizzle-orm";
@@ -26,6 +26,17 @@ export interface IStorage {
   // Claims
   getClaimsForListing(listingId: string): Promise<Claim[]>;
   createClaim(claim: InsertClaim): Promise<Claim>;
+  
+  // Organizations
+  getAllOrganizations(): Promise<Organization[]>;
+  getOrganization(id: string): Promise<Organization | undefined>;
+  createOrganization(org: InsertOrganization): Promise<Organization>;
+  
+  // Supplier Ratings
+  getRatingsForOrganization(organizationId: string): Promise<SupplierRating[]>;
+  getRatingsForSupplier(supplierId: string): Promise<SupplierRating[]>;
+  createSupplierRating(rating: InsertSupplierRating): Promise<SupplierRating>;
+  getListingsByDonor(donorId: string): Promise<FoodListing[]>;
 }
 
 export class MemStorage implements IStorage {
@@ -33,12 +44,16 @@ export class MemStorage implements IStorage {
   private foodListings: Map<string, FoodListing>;
   private sensorData: Map<string, SensorData>;
   private claims: Map<string, Claim>;
+  private organizations: Map<string, Organization>;
+  private supplierRatings: Map<string, SupplierRating>;
 
   constructor() {
     this.users = new Map();
     this.foodListings = new Map();
     this.sensorData = new Map();
     this.claims = new Map();
+    this.organizations = new Map();
+    this.supplierRatings = new Map();
   }
 
   async getUser(id: string): Promise<User | undefined> {
@@ -133,6 +148,55 @@ export class MemStorage implements IStorage {
     this.claims.set(id, claim);
     return claim;
   }
+
+  async getAllOrganizations(): Promise<Organization[]> {
+    return Array.from(this.organizations.values());
+  }
+
+  async getOrganization(id: string): Promise<Organization | undefined> {
+    return this.organizations.get(id);
+  }
+
+  async createOrganization(insertOrg: InsertOrganization): Promise<Organization> {
+    const id = randomUUID();
+    const org: Organization = {
+      ...insertOrg,
+      id,
+      createdAt: new Date(),
+    };
+    this.organizations.set(id, org);
+    return org;
+  }
+
+  async getRatingsForOrganization(organizationId: string): Promise<SupplierRating[]> {
+    return Array.from(this.supplierRatings.values()).filter(
+      rating => rating.organizationId === organizationId
+    );
+  }
+
+  async getRatingsForSupplier(supplierId: string): Promise<SupplierRating[]> {
+    return Array.from(this.supplierRatings.values()).filter(
+      rating => rating.supplierId === supplierId
+    );
+  }
+
+  async createSupplierRating(insertRating: InsertSupplierRating): Promise<SupplierRating> {
+    const id = randomUUID();
+    const rating: SupplierRating = {
+      ...insertRating,
+      id,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    this.supplierRatings.set(id, rating);
+    return rating;
+  }
+
+  async getListingsByDonor(donorId: string): Promise<FoodListing[]> {
+    return Array.from(this.foodListings.values()).filter(
+      listing => listing.donorId === donorId
+    );
+  }
 }
 
 export class DatabaseStorage implements IStorage {
@@ -200,6 +264,37 @@ export class DatabaseStorage implements IStorage {
   async createClaim(insertClaim: InsertClaim): Promise<Claim> {
     const result = await db.insert(claims).values(insertClaim).returning();
     return result[0];
+  }
+
+  async getAllOrganizations(): Promise<Organization[]> {
+    return await db.select().from(organizations);
+  }
+
+  async getOrganization(id: string): Promise<Organization | undefined> {
+    const result = await db.select().from(organizations).where(eq(organizations.id, id)).limit(1);
+    return result[0];
+  }
+
+  async createOrganization(insertOrg: InsertOrganization): Promise<Organization> {
+    const result = await db.insert(organizations).values(insertOrg).returning();
+    return result[0];
+  }
+
+  async getRatingsForOrganization(organizationId: string): Promise<SupplierRating[]> {
+    return await db.select().from(supplierRatings).where(eq(supplierRatings.organizationId, organizationId));
+  }
+
+  async getRatingsForSupplier(supplierId: string): Promise<SupplierRating[]> {
+    return await db.select().from(supplierRatings).where(eq(supplierRatings.supplierId, supplierId));
+  }
+
+  async createSupplierRating(insertRating: InsertSupplierRating): Promise<SupplierRating> {
+    const result = await db.insert(supplierRatings).values(insertRating).returning();
+    return result[0];
+  }
+
+  async getListingsByDonor(donorId: string): Promise<FoodListing[]> {
+    return await db.select().from(foodListings).where(eq(foodListings.donorId, donorId));
   }
 }
 
