@@ -15,7 +15,7 @@ export default function MapPage() {
   const { toast } = useToast();
   const [selectedListing, setSelectedListing] = useState<FoodListing | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
-  const [userLocation, setUserLocation] = useState({ lat: 40.7128, lng: -74.0060 }); // Default to NYC
+  const [userLocation, setUserLocation] = useState({ lat: 44.6488, lng: -63.5752 }); // Default to Halifax
   const [mapRadius, setMapRadius] = useState(150);
   const mapContainerRef = useRef<HTMLDivElement>(null);
 
@@ -66,7 +66,7 @@ export default function MapPage() {
         (error) => {
           toast({
             title: "Location access denied",
-            description: "Using default location (NYC)",
+            description: "Using default location (Halifax)",
             variant: "destructive",
           });
         }

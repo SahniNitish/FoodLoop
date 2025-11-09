@@ -72,8 +72,8 @@ export default function HomePage() {
   };
 
   const mapLocations = [
-    { id: "1", name: "Downtown Food Bank", type: "food_bank" as const, latitude: 40.7128, longitude: -74.0060 },
-    { id: "2", name: "Community Fridge #1", type: "community_fridge" as const, latitude: 40.7580, longitude: -73.9855 },
+    { id: "1", name: "Hope Food Bank - Downtown Halifax", type: "food_bank" as const, latitude: 44.6488, longitude: -63.5752 },
+    { id: "2", name: "Community Fridge - North End", type: "community_fridge" as const, latitude: 44.6650, longitude: -63.5820 },
     ...(foodListings || []).map(listing => ({
       id: listing.id,
       name: listing.title,
@@ -118,7 +118,7 @@ export default function HomePage() {
               <nav className="hidden md:flex items-center gap-6">
                 <Link href="/map" className="text-sm font-medium hover:text-primary">Find Food</Link>
                 <button onClick={() => setShowPostForm(true)} className="text-sm font-medium hover:text-primary">Post Food</button>
-                <a href="#" className="text-sm font-medium hover:text-primary">Monitor</a>
+                <Link href="/monitor" className="text-sm font-medium hover:text-primary">Monitor</Link>
                 <Link href="/impact" className="text-sm font-medium hover:text-primary">Impact</Link>
               </nav>
             </div>
@@ -289,10 +289,10 @@ export default function HomePage() {
             
             <div>
               <h3 className="font-semibold mb-4">Platform</h3>
-              <ul className="space-y-2 text-sm text-muted-foreground">
+              <ul className="space-y-2 text-muted-foreground">
                 <li><Link href="/map" className="hover:text-foreground">Find Food</Link></li>
                 <li><button onClick={() => setShowPostForm(true)} className="hover:text-foreground">Post Food</button></li>
-                <li><a href="#" className="hover:text-foreground">Monitor</a></li>
+                <li><Link href="/monitor" className="hover:text-foreground">Monitor</Link></li>
                 <li><Link href="/impact" className="hover:text-foreground">Impact Dashboard</Link></li>
               </ul>
             </div>
@@ -336,7 +336,7 @@ export default function HomePage() {
           <nav className="flex flex-col gap-4 mt-8">
             <Link href="/map" className="text-lg font-medium hover:text-primary">Find Food</Link>
             <button onClick={() => { setShowPostForm(true); setShowMobileMenu(false); }} className="text-lg font-medium hover:text-primary text-left">Post Food</button>
-            <a href="#" className="text-lg font-medium hover:text-primary">Monitor</a>
+            <Link href="/monitor" className="text-lg font-medium hover:text-primary">Monitor</Link>
             <Link href="/impact" className="text-lg font-medium hover:text-primary">Impact</Link>
           </nav>
         </SheetContent>

@@ -16,7 +16,7 @@ async function seed() {
       password: "demo123",
     },
     {
-      username: "green_grocers_nyc",
+      username: "green_grocers_halifax",
       password: "demo123",
     },
     {
@@ -31,16 +31,16 @@ async function seed() {
 
   console.log(`✅ Created ${demoUsers.length} demo users`);
 
-  // NYC locations for diverse map coverage
+  // Halifax locations for diverse map coverage
   const locations = [
-    { name: "Hope Food Bank - Manhattan", lat: 40.7580, lng: -73.9855, address: "456 W 42nd St, Manhattan" },
-    { name: "Green Grocers - Brooklyn", lat: 40.6782, lng: -73.9442, address: "789 Bedford Ave, Brooklyn" },
-    { name: "Community Kitchen - Queens", lat: 40.7282, lng: -73.7949, address: "321 Main St, Flushing" },
-    { name: "Mario's Italian Restaurant - Bronx", lat: 40.8448, lng: -73.8648, address: "567 Arthur Ave, Bronx" },
-    { name: "Fresh Start Market - Staten Island", lat: 40.5795, lng: -74.1502, address: "234 Bay St, Staten Island" },
-    { name: "Upper East Side Bakery", lat: 40.7736, lng: -73.9566, address: "890 Lexington Ave, Manhattan" },
-    { name: "Downtown Brooklyn Cafe", lat: 40.6947, lng: -73.9897, address: "123 Flatbush Ave, Brooklyn" },
-    { name: "Harlem Community Center", lat: 40.8116, lng: -73.9465, address: "456 Malcolm X Blvd, Manhattan" },
+    { name: "Hope Food Bank - Downtown", lat: 44.6488, lng: -63.5752, address: "1234 Barrington St, Downtown Halifax" },
+    { name: "Green Grocers - North End", lat: 44.6650, lng: -63.5820, address: "567 Gottingen St, North End" },
+    { name: "Community Kitchen - Dartmouth", lat: 44.6710, lng: -63.5683, address: "890 Portland St, Dartmouth" },
+    { name: "Mario's Italian Restaurant - Clayton Park", lat: 44.6580, lng: -63.6350, address: "234 Lacewood Dr, Clayton Park" },
+    { name: "Fresh Start Market - Bedford", lat: 44.7350, lng: -63.6800, address: "456 Bedford Hwy, Bedford" },
+    { name: "Spring Garden Bakery", lat: 44.6430, lng: -63.5770, address: "789 Spring Garden Rd, Halifax" },
+    { name: "Quinpool Cafe", lat: 44.6450, lng: -63.6020, address: "321 Quinpool Rd, Halifax" },
+    { name: "Hydrostone Market", lat: 44.6720, lng: -63.5950, address: "123 Young St, North End" },
   ];
 
   const now = new Date();
@@ -87,7 +87,7 @@ async function seed() {
     cost: "Free",
   });
 
-  // Green Grocers - Brooklyn
+  // Green Grocers - Halifax North End
   listings.push({
     title: "Mixed Fruit Basket",
     description: "Beautiful assortment of ripe fruits including apples, bananas, oranges, and pears. Slightly overripe but still delicious and nutritious. Perfect for smoothies or fresh eating.",
@@ -275,18 +275,65 @@ async function seed() {
     cost: "Free",
   });
 
-  await db.insert(foodListings).values(listings);
+  const createdListings = await db.insert(foodListings).values(listings).returning();
 
   console.log(`✅ Created ${listings.length} demo food listings`);
+
+  // Create demo claims
+  const { claims } = await import("@shared/schema");
+  const demoClaims = [
+    {
+      listingId: createdListings[0].id, // Fresh Organic Vegetables
+      claimerName: "Sarah Johnson",
+      claimerContact: "902-555-0123",
+      status: "confirmed",
+    },
+    {
+      listingId: createdListings[0].id,
+      claimerName: "Community Kitchen Halifax",
+      claimerContact: "902-555-0456",
+      status: "pending",
+    },
+    {
+      listingId: createdListings[1].id, // Bread Loaves
+      claimerName: "Michael Chen",
+      claimerContact: "902-555-0789",
+      status: "confirmed",
+    },
+    {
+      listingId: createdListings[6].id, // Prepared Pasta
+      claimerName: "Halifax Shelter",
+      claimerContact: "902-555-0321",
+      status: "confirmed",
+    },
+    {
+      listingId: createdListings[6].id,
+      claimerName: "Emma Wilson",
+      claimerContact: "902-555-0654",
+      status: "pending",
+    },
+    {
+      listingId: createdListings[2].id, // Mixed Fruit
+      claimerName: "David Martinez",
+      claimerContact: "902-555-0987",
+      status: "confirmed",
+    },
+  ];
+
+  await db.insert(claims).values(demoClaims);
+  console.log(`✅ Created ${demoClaims.length} demo claims`);
+
   console.log("\n📍 Demo Data Summary:");
   console.log("  - Hope Food Bank (NGO) - 4 listings");
-  console.log("  - Green Grocers NYC - 3 listings");
+  console.log("  - Green Grocers Halifax - 3 listings");
   console.log("  - Sarah Baker - 2 listings");
   console.log("  - Mario's Restaurant - 3 listings");
+  console.log("\n📞 Demo Claims:");
+  console.log("  - 6 claims from various community members");
   console.log("\n🎉 Database seeded successfully!");
   console.log("\nDemo Credentials:");
   console.log("  - hope_food_bank / demo123");
-  console.log("  - green_grocers_nyc / demo123");
+  console.log("  - green_grocers_halifax / demo123");
   console.log("  - sarah_baker / demo123");
   console.log("  - marios_restaurant / demo123");
 }

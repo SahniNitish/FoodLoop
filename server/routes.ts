@@ -175,6 +175,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Monitor/Dashboard Route - Get listings with claims for a specific donor
+  app.get("/api/my-listings", async (req, res) => {
+    try {
+      // For demo, use hope_food_bank as the donor
+      const donorUsername = "hope_food_bank";
+      const donor = await storage.getUserByUsername(donorUsername);
+      
+      if (!donor) {
+        return res.status(404).json({ error: "Donor not found" });
+      }
+
+      const listings = await storage.getAllFoodListings();
+      const donorListings = listings.filter(l => l.donorId === donor.id);
+      
+      // Fetch claims for each listing
+      const listingsWithClaims = await Promise.all(
+        donorListings.map(async (listing) => {
+          const claims = await storage.getClaimsForListing(listing.id);
+          return {
+            ...listing,
+            claims,
+          };
+        })
+      );
+
+      res.json(listingsWithClaims);
+    } catch (error) {
+      console.error("Error fetching donor listings:", error);
+      res.status(500).json({ error: "Failed to fetch listings" });
+    }
+  });
+
   // Sensor Data Routes
   
   // Get sensor data for a listing

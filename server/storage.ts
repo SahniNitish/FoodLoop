@@ -1,4 +1,4 @@
-import { type User, type InsertUser, type FoodListing, type InsertFoodListing, type SensorData, type InsertSensorData, users, foodListings, sensorData } from "@shared/schema";
+import { type User, type InsertUser, type FoodListing, type InsertFoodListing, type SensorData, type InsertSensorData, type Claim, type InsertClaim, users, foodListings, sensorData, claims } from "@shared/schema";
 import { randomUUID } from "crypto";
 import { db } from "./db";
 import { eq } from "drizzle-orm";
@@ -22,17 +22,23 @@ export interface IStorage {
   // Sensor Data
   getSensorDataForListing(listingId: string): Promise<SensorData[]>;
   createSensorData(data: InsertSensorData): Promise<SensorData>;
+  
+  // Claims
+  getClaimsForListing(listingId: string): Promise<Claim[]>;
+  createClaim(claim: InsertClaim): Promise<Claim>;
 }
 
 export class MemStorage implements IStorage {
   private users: Map<string, User>;
   private foodListings: Map<string, FoodListing>;
   private sensorData: Map<string, SensorData>;
+  private claims: Map<string, Claim>;
 
   constructor() {
     this.users = new Map();
     this.foodListings = new Map();
     this.sensorData = new Map();
+    this.claims = new Map();
   }
 
   async getUser(id: string): Promise<User | undefined> {
@@ -109,6 +115,24 @@ export class MemStorage implements IStorage {
     this.sensorData.set(id, data);
     return data;
   }
+
+  async getClaimsForListing(listingId: string): Promise<Claim[]> {
+    return Array.from(this.claims.values()).filter(
+      claim => claim.listingId === listingId
+    );
+  }
+
+  async createClaim(insertClaim: InsertClaim): Promise<Claim> {
+    const id = randomUUID();
+    const claim: Claim = {
+      ...insertClaim,
+      id,
+      claimedAt: new Date(),
+      status: "pending",
+    };
+    this.claims.set(id, claim);
+    return claim;
+  }
 }
 
 export class DatabaseStorage implements IStorage {
@@ -166,6 +190,15 @@ export class DatabaseStorage implements IStorage {
 
   async createSensorData(insertData: InsertSensorData): Promise<SensorData> {
     const result = await db.insert(sensorData).values(insertData).returning();
+    return result[0];
+  }
+
+  async getClaimsForListing(listingId: string): Promise<Claim[]> {
+    return await db.select().from(claims).where(eq(claims.listingId, listingId));
+  }
+
+  async createClaim(insertClaim: InsertClaim): Promise<Claim> {
+    const result = await db.insert(claims).values(insertClaim).returning();
     return result[0];
   }
 }

@@ -39,6 +39,15 @@ export const sensorData = pgTable("sensor_data", {
   timestamp: timestamp("timestamp").notNull().default(sql`now()`),
 });
 
+export const claims = pgTable("claims", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  listingId: varchar("listing_id").notNull(),
+  claimerName: text("claimer_name").notNull(),
+  claimerContact: text("claimer_contact").notNull(),
+  claimedAt: timestamp("claimed_at").notNull().default(sql`now()`),
+  status: text("status").notNull().default("pending"),
+});
+
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
   password: true,
@@ -55,9 +64,17 @@ export const insertSensorDataSchema = createInsertSchema(sensorData).omit({
   timestamp: true,
 });
 
+export const insertClaimSchema = createInsertSchema(claims).omit({
+  id: true,
+  claimedAt: true,
+  status: true,
+});
+
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 export type FoodListing = typeof foodListings.$inferSelect;
 export type InsertFoodListing = z.infer<typeof insertFoodListingSchema>;
 export type SensorData = typeof sensorData.$inferSelect;
 export type InsertSensorData = z.infer<typeof insertSensorDataSchema>;
+export type Claim = typeof claims.$inferSelect;
+export type InsertClaim = z.infer<typeof insertClaimSchema>;
