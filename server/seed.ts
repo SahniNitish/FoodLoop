@@ -1,12 +1,14 @@
 import { db } from "./db";
-import { users, foodListings } from "@shared/schema";
+import { users, foodListings, organizations, supplierRatings } from "@shared/schema";
 import { sql } from "drizzle-orm";
 
 async function seed() {
   console.log("🌱 Seeding database with demo data...");
 
   // Clear existing data
+  await db.delete(supplierRatings);
   await db.delete(foodListings);
+  await db.delete(organizations);
   await db.delete(users);
 
   // Create demo users
@@ -323,6 +325,240 @@ async function seed() {
   await db.insert(claims).values(demoClaims);
   console.log(`✅ Created ${demoClaims.length} demo claims`);
 
+  // Create organizations (NGOs, Food Banks)
+  const demoOrganizations = await db.insert(organizations).values([
+    {
+      name: "Halifax Regional Food Bank",
+      type: "Food Bank",
+      description: "Halifax's largest food bank serving thousands of families across HRM. We work with local suppliers to redistribute surplus food and reduce waste while fighting hunger.",
+      location: "3792 Kempt Rd, Halifax, NS",
+      latitude: 44.6680,
+      longitude: -63.6150,
+      contactEmail: "info@halifaxfoodbank.org",
+      contactPhone: "902-457-1400",
+      website: "https://halifaxfoodbank.org",
+      verified: true,
+    },
+    {
+      name: "Feed Nova Scotia",
+      type: "NGO",
+      description: "A province-wide organization connecting surplus food with communities in need. We coordinate food rescue operations and support local food security initiatives.",
+      location: "61 Troop Ave, Dartmouth, NS",
+      latitude: 44.6820,
+      longitude: -63.5630,
+      contactEmail: "contact@feednovascotia.ca",
+      contactPhone: "902-457-1552",
+      website: "https://feednovascotia.ca",
+      verified: true,
+    },
+    {
+      name: "Hope Cottage Community Center",
+      type: "Community Center",
+      description: "Community-based organization providing meals and support services to those experiencing food insecurity in North End Halifax.",
+      location: "2736 Agricola St, Halifax, NS",
+      latitude: 44.6630,
+      longitude: -63.5890,
+      contactEmail: "hopecottage@halifax.ca",
+      contactPhone: "902-422-8324",
+      verified: true,
+    },
+    {
+      name: "Souls Harbour Rescue Mission",
+      type: "Rescue Mission",
+      description: "Faith-based organization serving hot meals daily and accepting food donations from local businesses and farms to support vulnerable populations.",
+      location: "26 Seymour St, Halifax, NS",
+      latitude: 44.6505,
+      longitude: -63.5745,
+      contactEmail: "info@soulsharbour.ca",
+      contactPhone: "902-423-4767",
+      website: "https://soulsharbour.ca",
+      verified: true,
+    },
+    {
+      name: "Parker Street Food & Furniture Bank",
+      type: "Food Bank",
+      description: "Dartmouth-based food bank providing emergency food assistance and household items to families in need. We partner with local suppliers for fresh produce and prepared foods.",
+      location: "2 Irishtown Rd, Dartmouth, NS",
+      latitude: 44.6780,
+      longitude: -63.5470,
+      contactEmail: "info@parkerstreet.org",
+      contactPhone: "902-479-3190",
+      website: "https://parkerstreet.org",
+      verified: true,
+    },
+    {
+      name: "Metro Turning Point",
+      type: "Shelter",
+      description: "Emergency shelter and outreach program accepting prepared meals and fresh food donations to serve vulnerable youth and families.",
+      location: "60 Almon St, Halifax, NS",
+      latitude: 44.6570,
+      longitude: -63.5980,
+      contactEmail: "info@metroturningpoint.ca",
+      contactPhone: "902-423-4782",
+      verified: false,
+    },
+  ]).returning();
+
+  console.log(`✅ Created ${demoOrganizations.length} organizations`);
+
+  // Create AI-based supplier ratings
+  // AI Analysis structure: { reasoning, factors, confidence }
+  const demoRatings = [
+    // Hope Food Bank ratings
+    {
+      supplierId: demoUsers[0].id, // hope_food_bank
+      organizationId: demoOrganizations[0].id, // Halifax Regional Food Bank
+      overallRating: 4.8,
+      googleReviewScore: 4.7,
+      foodSafetyCertified: true,
+      reliabilityScore: 4.9,
+      qualityScore: 4.8,
+      totalDonations: 127,
+      aiAnalysis: {
+        reasoning: "Exceptional supplier with consistent quality and reliability. Strong Google presence (4.7 stars, 245 reviews) and verified food safety certification. High-quality organic produce donations.",
+        factors: {
+          googleReviewScore: 4.7,
+          foodSafetyCertified: true,
+          reliabilityScore: 4.9,
+          qualityScore: 4.8,
+          totalDonations: 127
+        },
+        confidence: 0.95
+      }
+    },
+    {
+      supplierId: demoUsers[1].id, // green_grocers_halifax
+      organizationId: demoOrganizations[0].id,
+      overallRating: 4.6,
+      googleReviewScore: 4.5,
+      foodSafetyCertified: true,
+      reliabilityScore: 4.7,
+      qualityScore: 4.6,
+      totalDonations: 89,
+      aiAnalysis: {
+        reasoning: "Reliable local supplier with excellent food safety practices. Google reviews (4.5 stars, 128 reviews) highlight fresh produce quality. Certified by Nova Scotia Health Authority.",
+        factors: {
+          googleReviewScore: 4.5,
+          foodSafetyCertified: true,
+          reliabilityScore: 4.7,
+          qualityScore: 4.6,
+          totalDonations: 89
+        },
+        confidence: 0.92
+      }
+    },
+    {
+      supplierId: demoUsers[3].id, // marios_restaurant
+      organizationId: demoOrganizations[0].id,
+      overallRating: 4.4,
+      googleReviewScore: 4.6,
+      foodSafetyCertified: true,
+      reliabilityScore: 4.3,
+      qualityScore: 4.5,
+      totalDonations: 62,
+      aiAnalysis: {
+        reasoning: "Well-established restaurant (4.6 stars, 312 reviews) with food safety certification. Prepared meals are high quality but donation schedule can be irregular.",
+        factors: {
+          googleReviewScore: 4.6,
+          foodSafetyCertified: true,
+          reliabilityScore: 4.3,
+          qualityScore: 4.5,
+          totalDonations: 62
+        },
+        confidence: 0.88
+      }
+    },
+    // Feed Nova Scotia ratings
+    {
+      supplierId: demoUsers[1].id, // green_grocers_halifax
+      organizationId: demoOrganizations[1].id,
+      overallRating: 4.7,
+      googleReviewScore: 4.5,
+      foodSafetyCertified: true,
+      reliabilityScore: 4.8,
+      qualityScore: 4.7,
+      totalDonations: 103,
+      aiAnalysis: {
+        reasoning: "Top-tier supplier for Feed Nova Scotia with exceptional reliability. Consistent weekly deliveries of fresh produce. Strong community reputation.",
+        factors: {
+          googleReviewScore: 4.5,
+          foodSafetyCertified: true,
+          reliabilityScore: 4.8,
+          qualityScore: 4.7,
+          totalDonations: 103
+        },
+        confidence: 0.94
+      }
+    },
+    {
+      supplierId: demoUsers[2].id, // sarah_baker
+      organizationId: demoOrganizations[1].id,
+      overallRating: 4.5,
+      googleReviewScore: 4.8,
+      foodSafetyCertified: true,
+      reliabilityScore: 4.4,
+      qualityScore: 4.6,
+      totalDonations: 45,
+      aiAnalysis: {
+        reasoning: "Artisan baker with outstanding product quality (4.8 stars, 89 reviews). Smaller donation volume but exceptional freshness and taste. Food safety certified.",
+        factors: {
+          googleReviewScore: 4.8,
+          foodSafetyCertified: true,
+          reliabilityScore: 4.4,
+          qualityScore: 4.6,
+          totalDonations: 45
+        },
+        confidence: 0.89
+      }
+    },
+    // Hope Cottage ratings
+    {
+      supplierId: demoUsers[3].id, // marios_restaurant
+      organizationId: demoOrganizations[2].id,
+      overallRating: 4.3,
+      googleReviewScore: 4.6,
+      foodSafetyCertified: true,
+      reliabilityScore: 4.2,
+      qualityScore: 4.4,
+      totalDonations: 38,
+      aiAnalysis: {
+        reasoning: "Good quality prepared meals suitable for immediate serving. Restaurant has strong reviews but donation timing requires coordination.",
+        factors: {
+          googleReviewScore: 4.6,
+          foodSafetyCertified: true,
+          reliabilityScore: 4.2,
+          qualityScore: 4.4,
+          totalDonations: 38
+        },
+        confidence: 0.85
+      }
+    },
+    {
+      supplierId: demoUsers[0].id, // hope_food_bank
+      organizationId: demoOrganizations[4].id, // Parker Street
+      overallRating: 4.7,
+      googleReviewScore: 4.7,
+      foodSafetyCertified: true,
+      reliabilityScore: 4.8,
+      qualityScore: 4.7,
+      totalDonations: 95,
+      aiAnalysis: {
+        reasoning: "Highly dependable supplier network with verified practices. Excellent coordination and communication. Organic certification adds value.",
+        factors: {
+          googleReviewScore: 4.7,
+          foodSafetyCertified: true,
+          reliabilityScore: 4.8,
+          qualityScore: 4.7,
+          totalDonations: 95
+        },
+        confidence: 0.93
+      }
+    },
+  ];
+
+  await db.insert(supplierRatings).values(demoRatings);
+  console.log(`✅ Created ${demoRatings.length} supplier ratings`);
+
   console.log("\n📍 Demo Data Summary:");
   console.log("  - Hope Food Bank (NGO) - 4 listings");
   console.log("  - Green Grocers Halifax - 3 listings");
@@ -330,6 +566,10 @@ async function seed() {
   console.log("  - Mario's Restaurant - 3 listings");
   console.log("\n📞 Demo Claims:");
   console.log("  - 6 claims from various community members");
+  console.log("\n🏢 Demo Organizations:");
+  console.log("  - 6 Halifax NGOs and food banks with verified status");
+  console.log("\n⭐ Supplier Ratings:");
+  console.log("  - 7 AI-analyzed ratings based on Google reviews, certifications, and reliability");
   console.log("\n🎉 Database seeded successfully!");
   console.log("\nDemo Credentials:");
   console.log("  - hope_food_bank / demo123");
