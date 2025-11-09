@@ -107,4 +107,4 @@ Preferred communication style: Simple, everyday language.
 - Lazy initialization pattern for OpenAI client
 - Type-safe API layer with shared schema definitions
 - Middleware pattern for request processing and logging
-- Component composition with shadcn/ui design system
+- Component composition with shadcn/ui design system# FoodLoop
