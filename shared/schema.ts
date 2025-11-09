@@ -20,8 +20,9 @@ export const foodListings = pgTable("food_listings", {
   location: text("location").notNull(),
   latitude: real("latitude").notNull(),
   longitude: real("longitude").notNull(),
-  pickupTimeStart: timestamp("pickup_time_start").notNull(),
-  pickupTimeEnd: timestamp("pickup_time_end").notNull(),
+  expiryDate: timestamp("expiry_date"),
+  pickupTimeStart: timestamp("pickup_time_start"),
+  pickupTimeEnd: timestamp("pickup_time_end"),
   freshnessScore: integer("freshness_score").notNull(),
   qualityScore: integer("quality_score").notNull(),
   defectsDetected: text("defects_detected").array(),
@@ -48,6 +49,37 @@ export const claims = pgTable("claims", {
   status: text("status").notNull().default("pending"),
 });
 
+export const organizations = pgTable("organizations", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull(),
+  type: text("type").notNull(),
+  description: text("description").notNull(),
+  location: text("location").notNull(),
+  latitude: real("latitude").notNull(),
+  longitude: real("longitude").notNull(),
+  contactEmail: text("contact_email").notNull(),
+  contactPhone: text("contact_phone").notNull(),
+  website: text("website"),
+  imageUrl: text("image_url"),
+  verified: integer("verified").notNull().default(0),
+  createdAt: timestamp("created_at").notNull().default(sql`now()`),
+});
+
+export const supplierRatings = pgTable("supplier_ratings", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  supplierId: varchar("supplier_id").notNull(),
+  organizationId: varchar("organization_id").notNull(),
+  overallRating: real("overall_rating").notNull(),
+  googleReviewScore: real("google_review_score"),
+  foodSafetyCertified: integer("food_safety_certified").notNull().default(0),
+  reliabilityScore: real("reliability_score").notNull(),
+  qualityScore: real("quality_score").notNull(),
+  totalDonations: integer("total_donations").notNull().default(0),
+  aiAnalysis: jsonb("ai_analysis"),
+  createdAt: timestamp("created_at").notNull().default(sql`now()`),
+  updatedAt: timestamp("updated_at").notNull().default(sql`now()`),
+});
+
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
   password: true,
@@ -70,6 +102,17 @@ export const insertClaimSchema = createInsertSchema(claims).omit({
   status: true,
 });
 
+export const insertOrganizationSchema = createInsertSchema(organizations).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertSupplierRatingSchema = createInsertSchema(supplierRatings).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 export type FoodListing = typeof foodListings.$inferSelect;
@@ -78,3 +121,7 @@ export type SensorData = typeof sensorData.$inferSelect;
 export type InsertSensorData = z.infer<typeof insertSensorDataSchema>;
 export type Claim = typeof claims.$inferSelect;
 export type InsertClaim = z.infer<typeof insertClaimSchema>;
+export type Organization = typeof organizations.$inferSelect;
+export type InsertOrganization = z.infer<typeof insertOrganizationSchema>;
+export type SupplierRating = typeof supplierRatings.$inferSelect;
+export type InsertSupplierRating = z.infer<typeof insertSupplierRatingSchema>;
