@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useRoute } from "wouter";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,10 +17,12 @@ import {
   Award,
   Loader2,
   ArrowLeft,
-  ShieldCheck
+  ShieldCheck,
+  Sparkles
 } from "lucide-react";
 import { Link } from "wouter";
 import { Progress } from "@/components/ui/progress";
+import AISupplierAnalysisModal from "@/components/AISupplierAnalysisModal";
 
 interface Organization {
   id: string;
@@ -69,6 +72,8 @@ interface SupplierRating {
 export default function OrganizationDetailPage() {
   const [, params] = useRoute("/organizations/:id");
   const orgId = params?.id;
+  const [selectedSupplier, setSelectedSupplier] = useState<SupplierRating | null>(null);
+  const [showAnalysisModal, setShowAnalysisModal] = useState(false);
 
   const { data: organization, isLoading } = useQuery<Organization>({
     queryKey: ["/api/organizations", orgId],
@@ -82,6 +87,11 @@ export default function OrganizationDetailPage() {
     },
     enabled: !!orgId,
   });
+
+  const handleAnalyzeSupplier = (supplier: SupplierRating) => {
+    setSelectedSupplier(supplier);
+    setShowAnalysisModal(true);
+  };
 
   if (isLoading) {
     return (
@@ -306,11 +316,46 @@ export default function OrganizationDetailPage() {
                     <Progress value={Math.min(supplier.totalListings, 100)} aria-label={`Total listings: ${supplier.totalListings}`} />
                   </div>
                 </div>
+
+                <div className="pt-4 border-t">
+                  <Button 
+                    onClick={() => handleAnalyzeSupplier(supplier)} 
+                    className="w-full"
+                    variant="outline"
+                    data-testid={`button-analyze-${supplier.id}`}
+                  >
+                    <Sparkles className="h-4 w-4 mr-2" />
+                    View Full AI Analysis
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           ))}
         </div>
       )}
+
+      <AISupplierAnalysisModal
+        open={showAnalysisModal}
+        onClose={() => setShowAnalysisModal(false)}
+        supplier={selectedSupplier ? {
+          supplierName: selectedSupplier.supplierName,
+          overallRating: selectedSupplier.overallRating,
+          googleReviewScore: selectedSupplier.googleReviewScore || 0,
+          foodSafetyCertified: selectedSupplier.foodSafetyCertified,
+          reliabilityScore: selectedSupplier.reliabilityScore,
+          qualityScore: selectedSupplier.qualityScore,
+          donationHistory: selectedSupplier.totalDonations / 100, // Normalize to 0-1 scale
+          aiAnalysis: {
+            reasoning: selectedSupplier.aiAnalysis?.reasoning || "No analysis available",
+            factors: selectedSupplier.aiAnalysis?.factors 
+              ? Object.keys(selectedSupplier.aiAnalysis.factors).filter(key => 
+                  typeof selectedSupplier.aiAnalysis?.factors[key as keyof typeof selectedSupplier.aiAnalysis.factors] !== 'object'
+                )
+              : [],
+            confidence: selectedSupplier.aiAnalysis?.confidence || 0,
+          }
+        } : null}
+      />
     </div>
   );
 }
