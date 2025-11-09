@@ -112,3 +112,4 @@ Preferred communication style: Simple, everyday language.
 ## Project Structure
 
 All application files are organized in the `foodrescue/` directory for better project organization.
+webiste link => https://foodloop-ai-amartyakarmakar.replit.app
