@@ -73,11 +73,11 @@ export default function FoodListingCard({
         <div className="space-y-2 mb-4">
           <div className="flex items-center gap-2 text-sm">
             <MapPin className="h-4 w-4 text-muted-foreground" />
-            <span className="text-muted-foreground">{location}</span>
+            <span className="text-muted-foreground" data-testid={`text-location-${id}`}>{location}</span>
           </div>
           <div className="flex items-center gap-2 text-sm">
             <Clock className="h-4 w-4 text-muted-foreground" />
-            <span className="text-muted-foreground">{pickupTime}</span>
+            <span className="text-muted-foreground" data-testid={`text-pickup-${id}`}>{pickupTime}</span>
           </div>
         </div>
 
