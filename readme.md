@@ -107,4 +107,8 @@ Preferred communication style: Simple, everyday language.
 - Lazy initialization pattern for OpenAI client
 - Type-safe API layer with shared schema definitions
 - Middleware pattern for request processing and logging
-- Component composition with shadcn/ui design system# FoodLoop
+- Component composition with shadcn/ui design system
+
+## Project Structure
+
+All application files are organized in the `foodrescue/` directory for better project organization.
